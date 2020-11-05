@@ -22,17 +22,28 @@ pub enum Regex {
     /// Logical or operation
     ///
     /// Match either left of right arms
-    Alternation { left: Box<Regex>, right: Box<Regex> },
+    Alternation {
+        left: Box<Regex>,
+        right: Box<Regex>,
+    },
 
     /// Concatenation
     ///
     /// Match left followed by right
-    Concatenation { left: Box<Regex>, right: Box<Regex> },
+    Concatenation {
+        left: Box<Regex>,
+        right: Box<Regex>,
+    },
 
     /// Logical AND operation
     ///
     /// Match left and right arms
-    LogicalAnd { left: Box<Regex>, right: Box<Regex> },
+    LogicalAnd {
+        left: Box<Regex>,
+        right: Box<Regex>,
+    },
+
+    LogicalNot(Box<Regex>),
 }
 
 impl Regex {
@@ -45,15 +56,31 @@ impl Regex {
         }
     }
 
+    /// Apply the + operator to this regex
+    pub fn one_or_more(self) -> Self {
+        self.clone() + self.kleene()
+    }
+
+    /// Invert the regex.
+    pub fn logical_not(self) -> Self {
+        match self {
+            Regex::LogicalNot(r) => *r,
+            Regex::SymbolSet(s) => Regex::SymbolSet(sigma().difference(&s)),
+            other => Regex::LogicalNot(Box::new(other)),
+        }
+    }
+
     /// Create the empty string
     pub fn epsilon() -> Self {
         Regex::Epsilon
     }
 
+    /// Create an expression matching the given char.
     pub fn symbol(c: char) -> Self {
         Regex::SymbolSet(CharSet::new(c))
     }
 
+    /// Create expression which matches a range of characters.
     pub fn symbol_range(begin: char, end: char) -> Self {
         Regex::SymbolSet(CharSet::new2(begin, end))
     }
@@ -68,13 +95,14 @@ impl Regex {
         Regex::SymbolSet(CharSet::empty())
     }
 
+    /// Match any char in the alfabet
+    pub fn sigma() -> Self {
+        Regex::SymbolSet(sigma())
+    }
+
     /// Test if this regex is the empty string (epsilon)
     pub fn is_epsilon(&self) -> bool {
-        if let Regex::Epsilon = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Regex::Epsilon)
     }
 
     /// Test if this regex is the null set.
@@ -97,6 +125,7 @@ impl Regex {
             Regex::Concatenation { left, right } => left.is_nullable() && right.is_nullable(),
             Regex::Kleene(_) => true,
             Regex::SymbolSet(_) => false,
+            Regex::LogicalNot(r) => !r.is_nullable(),
         }
     }
 
@@ -122,6 +151,7 @@ impl Regex {
                     left.derivative(c) + *right.clone()
                 }
             }
+            Regex::LogicalNot(r) => r.derivative(c).logical_not(),
         }
     }
 
@@ -151,6 +181,7 @@ impl Regex {
                     left.character_classes()
                 }
             }
+            Regex::LogicalNot(r) => r.character_classes(),
         }
     }
 }
@@ -186,7 +217,7 @@ pub fn product_intersections(class1: Vec<CharSet>, class2: Vec<CharSet>) -> Vec<
 /// Apply union operation on all char sets
 fn unify(s: Vec<CharSet>) -> CharSet {
     let (first, rest) = s.split_first().unwrap();
-    rest.iter().fold(first.clone(), |a, b| b.union(a))
+    rest.iter().fold(first.clone(), |a, b| b.union(&a))
 }
 
 impl std::ops::BitOr for Regex {
@@ -213,12 +244,21 @@ impl std::ops::BitAnd for Regex {
     }
 }
 
+impl From<&str> for Regex {
+    fn from(re: &str) -> Self {
+        use crate::parse::parse_regex;
+        parse_regex(re)
+    }
+}
+
 /// Alternation / logical or operation
 fn alternation(left: Regex, right: Regex) -> Regex {
     if left.is_null() {
         right
     } else if right.is_null() {
         left
+    } else if let (Regex::SymbolSet(a), Regex::SymbolSet(b)) = (&left, &right) {
+        Regex::SymbolSet(a.union(b))
     } else {
         Regex::Alternation {
             left: Box::new(left),
@@ -266,6 +306,7 @@ impl std::fmt::Display for Regex {
             Regex::Concatenation { left, right } => write!(f, "({}.{})", left, right),
             Regex::LogicalAnd { left, right } => write!(f, "({}&{})", left, right),
             Regex::Kleene(r) => write!(f, "{}*", r),
+            Regex::LogicalNot(r) => write!(f, "!({})", r),
         }
     }
 }

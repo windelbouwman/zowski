@@ -2,14 +2,31 @@ use crate::expression::CharSet;
 use crate::vector::ExpressionVector;
 use std::collections::HashMap;
 
-pub type Dfa = (Vec<usize>, Vec<(usize, CharSet, usize)>, Vec<usize>);
+pub struct Dfa {
+    pub token_types: Vec<String>,
+    x: Vec<usize>,
+    pub transitions: Vec<(usize, CharSet, usize)>,
+    pub accepting: HashMap<usize, Vec<String>>,
+    pub error_state: usize,
+}
 
-/// Compile the given expression vector into a state machine
+/// Compile the given expression vector into a state machine.
+///
+/// The state machine contains:
+/// - state transitions
+/// - a list of accepting state
+/// - an error state
 pub fn compile(start_state: ExpressionVector) -> Dfa {
+    println!("Compiling expression vector: {:?}", start_state);
+
     let mut transitions: Vec<(usize, CharSet, usize)> = vec![];
     let mut states: HashMap<ExpressionVector, usize> = HashMap::new();
-    let mut accepting = vec![];
+    let mut accepting: HashMap<usize, Vec<String>> = HashMap::new();
+    let mut error_state = None;
     states.insert(start_state.clone(), 0);
+
+    let token_types: Vec<String> = start_state.names();
+
     // vec![v.clone()];
     // println!("States: {:?}", states);
     let mut stack = vec![(0, start_state)];
@@ -17,14 +34,19 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
         let (state_num, state_vector) = stack.pop().unwrap();
         println!("State: {}", state_vector);
 
-        if state_vector.is_nullable() {
-            accepting.push(state_num);
+        let matches = state_vector.is_nullable();
+        if !matches.is_empty() {
+            accepting.insert(state_num, matches);
+        }
+
+        if state_vector.is_null() {
+            error_state = Some(state_num);
         }
 
         for char_class in state_vector.character_classes() {
-            println!("Char class: {}", char_class);
+            // println!("Char class: {}", char_class);
             let c = char_class.first();
-            println!("Char: |{}|", c);
+            // println!("Char: |{}|", c);
 
             // Determine new state:
             let new_state_vector = state_vector.derivative(c);
@@ -42,5 +64,11 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
 
     println!("Done & done. States: {:?}", states);
 
-    (vec![], transitions, accepting)
+    Dfa {
+        token_types,
+        x: vec![],
+        transitions, 
+        accepting,
+        error_state: error_state.unwrap()
+    }
 }

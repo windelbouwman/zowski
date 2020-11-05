@@ -1,4 +1,6 @@
 
+# About
+
 Scanner generator using regular derivatives (Brzozowski derivatives).
 
 Usage example:
@@ -8,3 +10,13 @@ Usage example:
     $ okular machine.ps
 
 Status: idea
+
+# Features
+
+- unicode support
+- 
+
+# Resource section
+
+- https://github.com/MichaelPaddon/epsilon
+- https://en.wikipedia.org/wiki/Brzozowski_derivative

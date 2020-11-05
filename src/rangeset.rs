@@ -9,7 +9,7 @@ use super::range::{ItemsBetween, Range};
 /// as a sequence of ranges.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RangeSet<T> {
-    ranges: Vec<Range<T>>,
+    pub ranges: Vec<Range<T>>,
 }
 
 fn glue_overlapping<T>(ranges: Vec<Range<T>>) -> Vec<Range<T>>
@@ -96,9 +96,9 @@ where
     }
 
     /// Return union of this set with another set.
-    pub fn union(&self, other: Self) -> Self {
+    pub fn union(&self, other: &Self) -> Self {
         let mut new_ranges = self.ranges.clone();
-        new_ranges.extend(other.ranges);
+        new_ranges.extend(other.ranges.clone());
         Self::from_ranges(new_ranges)
     }
 
@@ -132,7 +132,7 @@ where
 
     /// Determine the symmetric difference between two sets.
     pub fn symmetric_difference(&self, other: &Self) -> Self {
-        self.difference(other).union(other.difference(self))
+        self.difference(other).union(&other.difference(self))
     }
 
     /// Calculate the set difference between this set and
@@ -176,7 +176,7 @@ where
         }
 
         // Append all remaining ranges:
-        resulting_ranges.extend(self_iter.map(|r| r.clone()));
+        resulting_ranges.extend(self_iter.cloned());
 
         RangeSet::from_ranges(resulting_ranges)
     }
@@ -269,7 +269,7 @@ mod tests {
     fn set_union() {
         let s1 = RangeSet::new2('A', 'G');
         let s2 = RangeSet::new2('X', 'Z');
-        let s3 = s1.union(s2);
+        let s3 = s1.union(&s2);
         assert!(!s3.is_empty());
         assert_eq!(10, s3.cardinality());
         assert!(s3.contains('A'));
@@ -287,7 +287,7 @@ mod tests {
     fn set_union_glueing() {
         let s1 = RangeSet::new2('A', 'D');
         let s2 = RangeSet::new2('E', 'K');
-        let s3 = s1.union(s2);
+        let s3 = s1.union(&s2);
         assert!(!s3.is_empty());
         assert_eq!(s3, RangeSet::new2('A', 'K'));
     }

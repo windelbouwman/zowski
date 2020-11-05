@@ -1,22 +1,20 @@
 mod dfa;
+mod dot;
+mod export_to_c;
 mod expression;
+mod parse;
 mod range;
 mod rangeset;
+mod scanner;
 mod vector;
 
-use dfa::{compile, Dfa};
-use expression::{CharSet, Regex};
-use std::collections::HashMap;
+use dfa::compile;
+use dot::write_dot;
+use export_to_c::write_c_code;
+use expression::Regex;
+use scanner::scan;
 use vector::ExpressionVector;
 
-/// Scan the given text for tokens
-// fn scan(prog: usize, text: &str) {
-//     let state = 0;
-//     for c in text.chars() {
-//         // ugh...
-//         state = next_state(c);
-//     }
-// }
 fn first_usages() {
     let r = Regex::symbol('G') + Regex::symbol('K');
     println!("r = {}, r_G = {}", r, r.derivative('G'));
@@ -30,38 +28,16 @@ fn first_usages() {
     println!("derivative_K (r) = {}", r.derivative('K'));
     // scan(r, "AAA");
 
-    let ev = ExpressionVector::new(vec![r]);
-    println!("Compiling expression vector: {:?}", ev);
+    let ev = ExpressionVector::new(vec![("TEST".to_owned(), r)]);
     let _dfa = compile(ev);
 }
 
 fn first_prog() {
     let digit = Regex::symbol_range('0', '9');
-    let number = digit.clone() + digit.kleene();
-    let ev = ExpressionVector::new(vec![number]);
-    println!("Compiling expression vector: {:?}", ev);
+    let number = digit.one_or_more();
+    let ev = ExpressionVector::new(vec![("NUM".to_owned(), number)]);
     let dfa = compile(ev);
-
     write_dot(dfa).unwrap();
-}
-
-/// Export as dot file
-fn write_dot(dfa: Dfa) -> std::io::Result<()> {
-    let filename = "machine.dot";
-    let mut f = std::fs::File::create(filename)?;
-    let (_, transitions, accepting) = dfa;
-    use std::io::Write;
-    writeln!(f, "digraph state_machine {{")?;
-    for (from_state, char_set, to_state) in transitions {
-        let label = format!("{}", char_set);
-        writeln!(f, "  {} -> {} [label=\"{}\"];", from_state, to_state, label)?;
-    }
-
-    for s in accepting {
-        writeln!(f, "  {}[peripheries=2];", s)?;
-    }
-    writeln!(f, "}}")?;
-    Ok(())
 }
 
 fn simple_example() {
@@ -74,24 +50,50 @@ fn simple_example() {
     other = .
 
     */
-    let digit = Regex::symbol_range('0', '9');
-    let letter = Regex::symbol_range('A', 'Z') | Regex::symbol_range('a', 'z') | Regex::symbol('_');
+    let digit = Regex::from("[0-9]");
+    let letter = Regex::from("[A-Za-z_]");
     let identifier = letter.clone() + (letter | digit.clone()).kleene();
-    let number = digit.clone() + digit.clone().kleene();
+    let number = digit.one_or_more();
     let operator = Regex::symbol('-')
         | Regex::symbol('+')
         | Regex::symbol('*')
         | Regex::symbol('/')
         | Regex::symbol('=');
-    let ev = ExpressionVector::new(vec![identifier, number, operator]);
-    println!("Compiling expression vector: {}", ev);
-
+    let ev = ExpressionVector::new(vec![
+        ("ID".to_owned(), identifier),
+        ("NUM".to_owned(), number),
+        ("OP".to_owned(), operator),
+    ]);
     let dfa = compile(ev);
     write_dot(dfa).unwrap();
+}
+
+fn make_lex() {
+    // Example of API usage for lexer generator
+    let token_spec = vec![
+        ("ID", "[A-Za-z][A-Za-z]*"),
+        ("NUMBER", "[0-9][0-9]*"),
+        ("SPACE", "[ ]+"),
+        // TODO: ("COMMENT", "/\\*!(.*\\*/.*)\\*/"),
+    ];
+    let mut ev = vec![];
+    for (name, re) in token_spec {
+        let expr = Regex::from(re);
+        ev.push((name.to_owned(), expr));
+    }
+    let ev = ExpressionVector::new(ev);
+    let dfa = compile(ev);
+    let test_text = "67432 2323  bla   mo";
+    println!("Scanning: {}", test_text);
+    write_c_code(&dfa).unwrap();
+    let tokens = scan(dfa, test_text);
+    println!("Tokens: {:?}", tokens);
+    // write_dot(dfa).unwrap();
 }
 
 fn main() {
     // first_usages();
     // first_prog();
-    simple_example();
+    // simple_example();
+    make_lex();
 }
