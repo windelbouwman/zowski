@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub struct Dfa {
     pub token_types: Vec<String>,
     x: Vec<usize>,
-    pub transitions: Vec<(usize, CharSet, usize)>,
+    pub transitions: Vec<(usize, Vec<(CharSet, usize)>)>,
     pub accepting: HashMap<usize, Vec<String>>,
     pub error_state: usize,
 }
@@ -19,7 +19,7 @@ pub struct Dfa {
 pub fn compile(start_state: ExpressionVector) -> Dfa {
     println!("Compiling expression vector: {:?}", start_state);
 
-    let mut transitions: Vec<(usize, CharSet, usize)> = vec![];
+    let mut transitions: Vec<(usize, Vec<(CharSet, usize)>)> = vec![];
     let mut states: HashMap<ExpressionVector, usize> = HashMap::new();
     let mut accepting: HashMap<usize, Vec<String>> = HashMap::new();
     let mut error_state = None;
@@ -43,6 +43,8 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
             error_state = Some(state_num);
         }
 
+        let mut state_transitions = vec![];
+
         for char_class in state_vector.character_classes() {
             // println!("Char class: {}", char_class);
             let c = char_class.first();
@@ -58,8 +60,9 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
             let new_state_num = states[&new_state_vector];
 
             // Add state transition:
-            transitions.push((state_num, char_class, new_state_num));
+            state_transitions.push((char_class, new_state_num));
         }
+        transitions.push((state_num, state_transitions));
     }
 
     println!("Done & done. States: {:?}", states);
@@ -67,8 +70,8 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
     Dfa {
         token_types,
         x: vec![],
-        transitions, 
+        transitions,
         accepting,
-        error_state: error_state.unwrap()
+        error_state: error_state.unwrap(),
     }
 }

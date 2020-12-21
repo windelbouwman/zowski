@@ -9,7 +9,8 @@ pub struct Token {
 
 /// Scan the given text for tokens
 pub fn scan(prog: Dfa, text: &str) -> Result<Vec<Token>, String> {
-    let (transitions, accepting, error_state) = (prog.transitions, prog.accepting, prog.error_state);
+    let (transitions, accepting, error_state) =
+        (prog.transitions, prog.accepting, prog.error_state);
     let mut state: usize = 0;
     let mut tokens = vec![];
 
@@ -58,11 +59,13 @@ pub fn scan(prog: Dfa, text: &str) -> Result<Vec<Token>, String> {
     Ok(tokens)
 }
 
-fn next_state(transitions: &[(usize, CharSet, usize)], state: usize, c: char) -> usize {
-    for (from_state, cc, to_state) in transitions {
+fn next_state(transitions: &[(usize, Vec<(CharSet, usize)>)], state: usize, c: char) -> usize {
+    for (from_state, t2) in transitions {
         if state == *from_state {
-            if cc.contains(c) {
-                return *to_state;
+            for (cc, to_state) in t2 {
+                if cc.contains(c) {
+                    return *to_state;
+                }
             }
         }
     }
