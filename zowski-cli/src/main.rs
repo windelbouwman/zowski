@@ -1,22 +1,3 @@
-mod dfa;
-mod dot;
-mod export_to_c;
-mod expression;
-mod parse;
-mod range;
-mod rangeset;
-mod scanner;
-mod spec;
-mod vector;
-
-use dfa::compile;
-use dot::write_dot;
-use export_to_c::write_c_code;
-use expression::Regex;
-use scanner::scan;
-use spec::read_spec;
-use vector::ExpressionVector;
-
 fn main() {
     convert().unwrap();
 }
@@ -33,18 +14,18 @@ fn convert() -> std::io::Result<()> {
     let filename = matches.value_of("filename").unwrap();
     let basename = matches.value_of("basename").unwrap();
 
-    let specs = read_spec(filename)?;
+    let specs = zowski::read_spec(filename)?;
     let ev = spec_to_expression_vector(specs);
-    let dfa = compile(ev);
-    write_c_code(&dfa, basename)?;
+    let dfa = zowski::compile(ev);
+    zowski::write_c_code(&dfa, basename)?;
     Ok(())
 }
 
-fn spec_to_expression_vector(specs: Vec<(String, String)>) -> ExpressionVector {
+fn spec_to_expression_vector(specs: Vec<(String, String)>) -> zowski::ExpressionVector {
     let mut ev = vec![];
     for (name, re) in specs {
-        let expr = Regex::from(re.as_str());
+        let expr = zowski::Regex::from(re.as_str());
         ev.push((name, expr));
     }
-    ExpressionVector::new(ev)
+    zowski::ExpressionVector::new(ev)
 }

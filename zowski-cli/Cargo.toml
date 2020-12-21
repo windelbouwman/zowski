@@ -1,0 +1,10 @@
+[package]
+name = "zowski-cli"
+version = "0.1.0"
+authors = ["Windel Bouwman <windel@windel.nl>"]
+edition = "2018"
+
+[dependencies]
+
+clap = "2"
+zowski = {path = "../zowski"}
