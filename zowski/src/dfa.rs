@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 pub struct Dfa {
     pub token_types: Vec<String>,
-    x: Vec<usize>,
     pub transitions: Vec<(usize, Vec<(CharSet, usize)>)>,
     pub accepting: HashMap<usize, Vec<String>>,
     pub error_state: usize,
@@ -69,7 +68,6 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
 
     Dfa {
         token_types,
-        x: vec![],
         transitions,
         accepting,
         error_state: error_state.unwrap(),

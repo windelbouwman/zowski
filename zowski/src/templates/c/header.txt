@@ -1,0 +1,45 @@
+#ifndef SCANNER_H
+#define SCANNER_H
+
+// ATTENTION: automatically generated code, do not edit by hand
+
+typedef enum zowski_token_type_tag {
+    {% for typ in token_types -%}
+    ZOWSKI_TOKEN_TYP_{{ typ }},
+    {% endfor -%}
+    ZOWSKI_TOKEN_ERROR,
+} zowski_token_t;
+
+typedef struct zowski_lexer_tag zowski_lexer_t;
+
+// result of char add function
+typedef enum zowski_result_tag {
+    // we are done with a token
+    ZOWSKI_RESULT_OK,
+
+    // We are done.
+    ZOWSKI_RESULT_FINISHED,
+
+    // Some error!
+    ZOWSKI_RESULT_ERROR,
+} zowski_result_t;
+
+// Contraption / deletion API:
+zowski_lexer_t* zowski_lexer_new();
+void zowski_lexer_init(zowski_lexer_t* lex);
+void zowski_lexer_delete(zowski_lexer_t* lex);
+
+// Character I/O API:
+void zowski_lexer_feed(zowski_lexer_t* lex, char* buf, int bufsize);
+
+// Proceeding API:
+zowski_result_t zowski_lexer_next_token(zowski_lexer_t* lex);
+
+// Token I/O API:
+const char* zowski_lexer_token_type_name(zowski_lexer_t* lex);
+void zowski_lexer_token_copy_text(zowski_lexer_t* lex, char* buf, const int bufsize);
+int zowski_lexer_get_token_start(zowski_lexer_t* lex);
+int zowski_lexer_get_token_end(zowski_lexer_t* lex);
+zowski_token_t zowski_lexer_get_token_type(zowski_lexer_t* lex);
+
+#endif

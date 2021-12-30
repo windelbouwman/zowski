@@ -1,5 +1,7 @@
-ID: [A-Za-z][A-Za-z]*
+ID: [A-Za-z][A-Za-z0-9]*
 NUMBER: [0-9]+
 DECIMAL: [0-9]+\.[0-9]+
 
 SPACE: [ ]+
+ADD: \+
+INC: \+\+

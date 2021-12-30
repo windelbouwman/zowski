@@ -1,0 +1,156 @@
+
+
+// ATTENTION: automatically generated code, do not edit by hand
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "scanner.h"
+
+struct zowski_lexer_tag {
+    int state;
+    int index;
+
+    // Of matched token:
+    int tok_start;
+    int tok_end;
+    zowski_token_t tok_type;
+
+    char* text_buffer;
+    int text_buffer_size;
+};
+
+void panic()
+{
+    printf("Major panic");
+    exit(1);
+}
+
+zowski_lexer_t* zowski_lexer_new()
+{
+    zowski_lexer_t* lex = malloc(sizeof(zowski_lexer_t));
+    zowski_lexer_init(lex);
+    return lex;
+}
+
+void zowski_lexer_delete(zowski_lexer_t* lex)
+{
+    free(lex);
+}
+
+void zowski_lexer_init(zowski_lexer_t* lex)
+{
+    lex->state = 0;
+    lex->index = 0;
+
+    lex->tok_start = 0;
+    lex->tok_end = 0;
+    lex->tok_type = ZOWSKI_TOKEN_ERROR;
+
+    lex->text_buffer = 0;
+    lex->text_buffer_size = 0;
+}
+
+// Mark the current cursor as accepting the given ID
+void zowski_lexer_mark_accepting(zowski_lexer_t* lex, int id)
+{
+    lex->tok_type = id;
+    lex->tok_end = lex->index;
+}
+
+void zowski_lexer_feed(zowski_lexer_t* lex, char* buf, int bufsize)
+{
+    lex->text_buffer = buf;
+    lex->text_buffer_size = bufsize;
+}
+
+void zowski_lexer_transition(zowski_lexer_t* lex, int c)
+{
+    // TODO: sort if statements below in a binary splitted tree (tree of if statements)
+    // Transition to next state, based on character
+    switch (lex->state)
+    {
+        {% for state in all_transitions -%}
+        case {{ state.num }}:
+            {% for transition in state.transitions -%}
+            {%if transition.begin == transition.end -%}
+            if ('{{ transition.begin }}' == c)
+            {% else -%}
+            if (('{{ transition.begin }}' <= c) && (c <= '{{ transition.end }}'))
+            {% endif -%}
+            {
+                lex->state = {{ transition.next_state }};
+            }
+            {% endfor -%}
+            break;
+        {% endfor -%}
+    }
+}
+
+zowski_result_t zowski_lexer_next_token(zowski_lexer_t* lex)
+{
+    if (lex->index == lex->text_buffer_size) return ZOWSKI_RESULT_FINISHED;
+
+    lex->index = lex->tok_end;
+    lex->tok_start = lex->tok_end;
+    lex->state = 0;
+    lex->tok_type = ZOWSKI_TOKEN_ERROR;
+
+    while (lex->index < lex->text_buffer_size)
+    {
+        int c = lex->text_buffer[lex->index++];
+        zowski_lexer_transition(lex, c);
+
+        // Check for accept or error states
+        switch (lex->state)
+        {
+            // Accepting states:
+            {% for accept_state, tokens in accepting_states -%}
+            case {{ accept_state }}:  // {{ tokens }}
+                zowski_lexer_mark_accepting(lex, ZOWSKI_TOKEN_TYP_{{ tokens[0] }});
+                break;
+            {% endfor -%}
+
+            // Error state:
+            case {{ error_state }}:  // Error state
+                // If we cannot match further, we end in the error state
+                return (lex->tok_type == ZOWSKI_TOKEN_ERROR) ? ZOWSKI_RESULT_ERROR : ZOWSKI_RESULT_OK;
+        }
+    }
+
+    return (lex->tok_type == ZOWSKI_TOKEN_ERROR) ? ZOWSKI_RESULT_ERROR : ZOWSKI_RESULT_OK;
+}
+
+int zowski_lexer_get_token_start(zowski_lexer_t* lex)
+{
+    return lex->tok_start;
+}
+
+int zowski_lexer_get_token_end(zowski_lexer_t* lex)
+{
+    return lex->tok_end;
+}
+
+zowski_token_t zowski_lexer_get_token_type(zowski_lexer_t* lex)
+{
+    return lex->tok_type;
+}
+
+void zowski_lexer_token_copy_text(zowski_lexer_t* lex, char* buf, const int bufsize)
+{
+    int tok_len = lex->tok_end - lex->tok_start;
+    if (tok_len > bufsize - 1) tok_len = bufsize - 1;
+    strncpy(buf, &lex->text_buffer[lex->tok_start], tok_len);
+    buf[tok_len] = 0;
+}
+
+const char* zowski_lexer_token_type_name(zowski_lexer_t* lex)
+{
+    switch (lex->tok_type) {
+        {% for token_type in token_types -%}
+        case ZOWSKI_TOKEN_TYP_{{ token_type }}:
+            return "{{ token_type }}";
+        {% endfor -%}
+    }
+    return "?";
+}

@@ -1,5 +1,5 @@
 
-demo: demo.c scanner.c
+demo: demo.c scanner.c scanner.h
 	gcc -o demo demo.c scanner.c
 
 scanner.c: tokens.txt
