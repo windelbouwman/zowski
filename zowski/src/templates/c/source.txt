@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "scanner.h"
+
+#include "{{ basename }}.h"
 
 struct zowski_lexer_tag {
     int state;
@@ -74,9 +75,9 @@ void zowski_lexer_transition(zowski_lexer_t* lex, int c)
         case {{ state.num }}:
             {% for transition in state.transitions -%}
             {%if transition.begin == transition.end -%}
-            if ('{{ transition.begin }}' == c)
+            if ('{{ transition.begin | my_escaper }}' == c)
             {% else -%}
-            if (('{{ transition.begin }}' <= c) && (c <= '{{ transition.end }}'))
+            if (('{{ transition.begin | my_escaper }}' <= c) && (c <= '{{ transition.end | my_escaper }}'))
             {% endif -%}
             {
                 lex->state = {{ transition.next_state }};

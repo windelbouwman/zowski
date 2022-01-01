@@ -191,7 +191,7 @@ fn sigma() -> CharSet {
     // TODO: expand to more code points!
     // space = ' ' = 32
     // tilde = '~' = 126
-    CharSet::new2(' ', '~')
+    CharSet::new2(' ', '~') | CharSet::new('\n')
 }
 
 /// Yeah...
@@ -247,7 +247,7 @@ impl std::ops::BitAnd for Regex {
 impl From<&str> for Regex {
     fn from(re: &str) -> Self {
         use crate::parse::parse_regex;
-        parse_regex(re)
+        parse_regex(re).unwrap()
     }
 }
 

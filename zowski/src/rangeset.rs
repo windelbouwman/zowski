@@ -182,6 +182,17 @@ where
     }
 }
 
+impl<T> std::ops::BitOr for RangeSet<T>
+where
+    T: Copy + Ord + ItemsBetween + std::fmt::Display + std::fmt::Debug,
+{
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self {
+        self.union(&rhs)
+    }
+}
+
 pub struct RangeSetIterator<'s, T> {
     s: &'s RangeSet<T>,
     index: usize,

@@ -9,7 +9,16 @@ pub fn write_c_code(dfa: &Dfa, basename: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn create_tera_context(dfa: &Dfa) -> tera::Context {
+// Format string properly, using escape codes such as \n and friends.
+fn my_escaper(
+    val: &tera::Value,
+    _ctx: &std::collections::HashMap<String, tera::Value>,
+) -> Result<tera::Value, tera::Error> {
+    let escaped: String = val.as_str().unwrap().escape_default().to_string();
+    Ok(tera::Value::String(escaped))
+}
+
+fn create_tera_context(dfa: &Dfa, basename: &str) -> tera::Context {
     let (token_types, all_transitions, accepting_states, error_state) = (
         &dfa.token_types,
         &dfa.transitions,
@@ -39,6 +48,7 @@ fn create_tera_context(dfa: &Dfa) -> tera::Context {
         .collect();
 
     let mut context = tera::Context::new();
+    context.insert("basename", basename);
     context.insert("error_state", error_state);
     context.insert("token_types", token_types);
     context.insert("accepting_states", accepting_states);
@@ -52,8 +62,10 @@ fn write_c_header(dfa: &Dfa, basename: &str) -> std::io::Result<()> {
     use std::io::Write;
 
     let template_text = std::include_str!("templates/c/header.txt");
-    let context = create_tera_context(dfa);
-    let generated_src = Tera::default().render_str(template_text, &context).unwrap();
+    let context = create_tera_context(dfa, basename);
+    let mut t = Tera::default();
+    t.register_filter("my_escaper", my_escaper);
+    let generated_src = t.render_str(template_text, &context).unwrap();
 
     write!(f, "{}", generated_src)?;
 
@@ -75,8 +87,11 @@ struct State {
 
 fn write_c_source(dfa: &Dfa, basename: &str) -> std::io::Result<()> {
     let template_text = std::include_str!("templates/c/source.txt");
-    let context = create_tera_context(dfa);
-    let generated_src = Tera::default().render_str(template_text, &context).unwrap();
+    let context = create_tera_context(dfa, basename);
+    let mut t = Tera::default();
+    t.register_filter("my_escaper", my_escaper);
+
+    let generated_src = t.render_str(template_text, &context).unwrap();
 
     let filename = format!("{}.c", basename);
     let mut f = std::fs::File::create(filename)?;

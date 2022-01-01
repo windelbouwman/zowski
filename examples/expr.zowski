@@ -1,0 +1,13 @@
+
+# https://github.com/westes/flex/blob/master/examples/manual/expr.lex
+
+NUMBER: [0-9]+
+FNUMBER: [0-9]+\.[0-9]+
+PLUS: \+
+MINUS: -
+MULT: \*
+DIV: /
+EXPON: ^
+LB: \(
+RB: \)
+WHITESPACE: [ ]*

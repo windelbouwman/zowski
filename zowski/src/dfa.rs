@@ -31,7 +31,7 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
     let mut stack = vec![(0, start_state)];
     while !stack.is_empty() {
         let (state_num, state_vector) = stack.pop().unwrap();
-        println!("State: {}", state_vector);
+        // println!("State {}: {}", state_num, state_vector);
 
         let matches = state_vector.is_nullable();
         if !matches.is_empty() {
@@ -53,6 +53,10 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
             let new_state_vector = state_vector.derivative(c);
             if !states.contains_key(&new_state_vector) {
                 let new_state_num = states.len();
+                // println!("New state number: {}", new_state_num);
+                if new_state_num > 2000 {
+                    panic!("State limit reached!");
+                }
                 states.insert(new_state_vector.clone(), new_state_num);
                 stack.push((new_state_num, new_state_vector.clone()));
             };
@@ -64,7 +68,7 @@ pub fn compile(start_state: ExpressionVector) -> Dfa {
         transitions.push((state_num, state_transitions));
     }
 
-    println!("Done & done. States: {:?}", states);
+    println!("Done & done. States: {:?}", states.len());
 
     Dfa {
         token_types,

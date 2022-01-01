@@ -1,9 +1,9 @@
 fn main() {
-    convert().unwrap();
+    convert();
 }
 
 /// Read token spec from file, and generate c code.
-fn convert() -> std::io::Result<()> {
+fn convert() {
     let matches = clap::App::new("regex scanner generator")
         .version("0")
         .author("Windel Bouwman")
@@ -14,18 +14,22 @@ fn convert() -> std::io::Result<()> {
     let filename = matches.value_of("filename").unwrap();
     let basename = matches.value_of("basename").unwrap();
 
-    let specs = zowski::read_spec(filename)?;
-    let ev = spec_to_expression_vector(specs);
-    let dfa = zowski::compile(ev);
-    zowski::write_c_code(&dfa, basename)?;
-    Ok(())
+    match zowski::read_spec(filename) {
+        Ok(specs) => {
+            let ev = spec_to_expression_vector(specs);
+            let dfa = zowski::compile(ev);
+            zowski::write_c_code(&dfa, basename).unwrap();
+        }
+        Err(err) => {
+            println!("Error: {:?}", err);
+        }
+    }
 }
 
-fn spec_to_expression_vector(specs: Vec<(String, String)>) -> zowski::ExpressionVector {
+fn spec_to_expression_vector(specs: Vec<zowski::TokenSpec>) -> zowski::ExpressionVector {
     let mut ev = vec![];
-    for (name, re) in specs {
-        let expr = zowski::Regex::from(re.as_str());
-        ev.push((name, expr));
+    for spec in specs {
+        ev.push((spec.name, spec.pattern));
     }
     zowski::ExpressionVector::new(ev)
 }

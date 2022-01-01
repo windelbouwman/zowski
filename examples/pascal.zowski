@@ -1,0 +1,31 @@
+
+# Example token spec from here:
+# https://github.com/westes/flex/blob/master/examples/manual/pascal.lex
+
+UNSIGNED: [0-9]+
+HEXVALUE: $[0-9a-fA-F]+
+REAL: [0-9]+\.[0-9]*
+IDENTIFIER: [A-Za-z][A-Za-z0-9_]*
+
+STRING: '[^'\n]*'
+
+WHITESPACE: [ ]+
+NEWLINE: \n
+
+LEQ: <=
+GEQ: >=
+EQ: =
+PLUS: \+
+MINUS: \-
+DOT: \.
+HAT: \^
+DOUBLEDOT: \.\.
+COLON: \:
+SEMI: \;
+LEFTPAR: \(
+RIGHTPAR: \)
+LEFTBRACKET: \[
+RIGHTBRACKET: \]
+
+COMMENT: {[^}]*}
+LINECOMMENT: //[^\n]*\n
